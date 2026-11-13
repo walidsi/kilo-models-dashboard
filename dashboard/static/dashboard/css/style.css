@@ -383,6 +383,10 @@ main.container {
     word-break: break-word;
 }
 
+.pricing-value {
+    white-space: pre;
+}
+
 .detail-capabilities {
     grid-column: 1 / -1;
 }

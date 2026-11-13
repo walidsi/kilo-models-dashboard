@@ -107,7 +107,7 @@ def _format_pricing(pricing):
             parts.append(f"Web search {_fmt_usd(float(web_search))}/req")
         except (TypeError, ValueError):
             pass
-    return " · ".join(parts)
+    return "\n".join(parts)
 
 
 # Logical complexity order for reasoning effort values (none -> max)

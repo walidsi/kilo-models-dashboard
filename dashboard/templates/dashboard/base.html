@@ -136,7 +136,7 @@
                             {% endif %}
                             <div class="detail-item">
                                 <span class="detail-label">Pricing</span>
-                                <span class="detail-value">{{ model.pricing|default:"-" }}</span>
+                                <span class="detail-value pricing-value">{{ model.pricing|default:"-" }}</span>
                             </div>
                             {% if model.capabilities %}
                             <div class="detail-item detail-capabilities">
@@ -178,7 +178,7 @@
                             </td>
                             <td data-sort="provider">{{ model.provider|default:"-" }}</td>
                             <td data-sort="context">{{ model.context_length|default:"-" }}</td>
-                            <td data-sort="pricing">{{ model.pricing|default:"-" }}</td>
+                            <td data-sort="pricing" class="pricing-value">{{ model.pricing|default:"-" }}</td>
                             <td data-sort="reasoning">{{ model.reasoning_options|default:"-" }}</td>
                             <td><button class="btn btn-copy" onclick="copyModelJson('{{ model.id|escapejs }}', this)" title="Copy model data">📋</button></td>
                         </tr>

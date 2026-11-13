@@ -18,7 +18,7 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}?v=3">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -100,6 +100,11 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                 </button>
                             </div>
+                            {% if model.architecture_input %}
+                            <div class="architecture-pills">
+                                {% for m in model.architecture_input %}<span class="chip">{{ m }}</span>{% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
                         <button class="btn btn-copy" onclick="copyModelJson('{{ model.id|escapejs }}', this)" title="Copy model data">
                             📋
@@ -113,10 +118,6 @@
 
                         <div class="model-details">
                             <div class="detail-item">
-                                <span class="detail-label">ID</span>
-                                <span class="detail-value">{{ model.id }}</span>
-                            </div>
-                            <div class="detail-item">
                                 <span class="detail-label">Provider</span>
                                 <span class="detail-value">{{ model.provider|default:"-" }}</span>
                             </div>
@@ -126,14 +127,8 @@
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Context Length</span>
-                                <span class="detail-value">{{ model.context_length|default:"-" }}</span>
+                                <span class="detail-value"{% if model.context_length %} title="{{ model.context_length }}"{% endif %}>{{ model.context_length_display|default:"-" }}</span>
                             </div>
-                            {% if model.architecture %}
-                            <div class="detail-item">
-                                <span class="detail-label">Architecture</span>
-                                <span class="detail-value">{{ model.architecture }}</span>
-                            </div>
-                            {% endif %}
                             <div class="detail-item">
                                 <span class="detail-label">Pricing</span>
                                 <span class="detail-value pricing-value">{{ model.pricing|default:"-" }}</span>
@@ -177,7 +172,7 @@
                                 </button>
                             </td>
                             <td data-sort="provider">{{ model.provider|default:"-" }}</td>
-                            <td data-sort="context">{{ model.context_length|default:"-" }}</td>
+                            <td data-sort="context" data-sort-value="{{ model.context_length|default:'' }}"{% if model.context_length %} title="{{ model.context_length }}"{% endif %}>{{ model.context_length_display|default:"-" }}</td>
                             <td data-sort="pricing" class="pricing-value">{{ model.pricing|default:"-" }}</td>
                             <td data-sort="reasoning">{{ model.reasoning_options|default:"-" }}</td>
                             <td><button class="btn btn-copy" onclick="copyModelJson('{{ model.id|escapejs }}', this)" title="Copy model data">📋</button></td>
@@ -205,7 +200,7 @@
         {% endblock %}
     </div>
 
-    <script src="{% static 'dashboard/js/script.js' %}"></script>
+    <script src="{% static 'dashboard/js/script.js' %}?v=2"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

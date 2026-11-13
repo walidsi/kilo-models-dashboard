@@ -230,11 +230,18 @@ function sortTable(column, ascending) {
     rows.sort(function (a, b) {
         var aCell = a.querySelector('td[data-sort="' + column + '"]');
         var bCell = b.querySelector('td[data-sort="' + column + '"]');
-        var aVal = aCell ? aCell.textContent.trim() : "";
-        var bVal = bCell ? bCell.textContent.trim() : "";
+        var aVal = getSortValue(aCell);
+        var bVal = getSortValue(bCell);
         return compareValues(aVal, bVal, ascending);
     });
     rows.forEach(function (row) { tbody.appendChild(row); });
+}
+
+function getSortValue(cell) {
+    if (!cell) return "";
+    var raw = cell.getAttribute("data-sort-value");
+    if (raw !== null) return raw;
+    return cell.textContent.trim();
 }
 
 function compareValues(a, b, ascending) {

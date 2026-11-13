@@ -91,6 +91,21 @@ def _fmt_usd(value):
     return f"${value:.4f}"
 
 
+def _format_number(value):
+    """Format a large integer into a scannable form (1M, 131K, etc.)."""
+    if value is None or value == "":
+        return ""
+    try:
+        num = int(float(value))
+    except (TypeError, ValueError):
+        return str(value)
+    if num >= 1_000_000:
+        return f"{round(num / 1_000_000)}M"
+    if num >= 1_000:
+        return f"{round(num / 1_000)}K"
+    return str(num)
+
+
 def _format_pricing(pricing):
     """Format a pricing object into a readable, per-1M-token string."""
     if not isinstance(pricing, dict) or not pricing:
@@ -204,6 +219,8 @@ def normalize_model(item):
     # architecture modality
     arch = item.get("architecture")
     arch_modality = arch.get("modality") if isinstance(arch, dict) else ""
+    arch_input = arch.get("input_modalities") if isinstance(arch, dict) else []
+    arch_output = arch.get("output_modalities") if isinstance(arch, dict) else []
 
     # supported parameters / capabilities
     supported_params = item.get("supported_parameters") or []
@@ -216,9 +233,12 @@ def normalize_model(item):
         "reasoning_options": reasoning_str,
         "reasoning_values": reasoning_values,
         "context_length": context_len if context_len is not None else "",
+        "context_length_display": _format_number(context_len),
         "capabilities": supported_params,
         "description": item.get("description") or "",
         "architecture": arch_modality,
+        "architecture_input": arch_input if isinstance(arch_input, list) else [],
+        "architecture_output": arch_output if isinstance(arch_output, list) else [],
         "created": item.get("created"),
         "raw": item,
     }

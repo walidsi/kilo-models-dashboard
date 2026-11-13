@@ -403,6 +403,23 @@ main.container {
     margin-bottom: 0.25rem;
 }
 
+.architecture-pills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.architecture-pills .chip {
+    margin: 0;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.25;
+}
+
 /* Table view */
 .models-table {
     overflow-x: auto;

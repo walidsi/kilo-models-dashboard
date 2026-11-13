@@ -67,27 +67,20 @@ document.addEventListener("DOMContentLoaded", function () {
     // View toggle (grid vs table)
     const viewToggle = document.getElementById("view-toggle");
     const viewIcon = document.getElementById("view-icon");
-    const gridView = document.getElementById("models-grid");
-    const tableView = document.getElementById("models-table");
+    const htmlEl = document.documentElement;
 
     function applyView(view) {
-        if (view === "table") {
-            if (gridView) gridView.style.display = "none";
-            if (tableView) tableView.style.display = "block";
-            if (viewIcon) viewIcon.textContent = "⊞";
-        } else {
-            if (gridView) gridView.style.display = "grid";
-            if (tableView) tableView.style.display = "none";
-            if (viewIcon) viewIcon.textContent = "☰";
-        }
+        htmlEl.setAttribute("data-view", view);
+        if (viewIcon) viewIcon.textContent = view === "table" ? "⊞" : "☰";
     }
 
-    var savedView = localStorage.getItem("kilo-view") || "grid";
-    applyView(savedView);
+    // The inline <head> script already set data-view before paint; sync the
+    // toggle icon with it here.
+    applyView(htmlEl.getAttribute("data-view") || "grid");
 
     if (viewToggle) {
         viewToggle.addEventListener("click", function () {
-            var current = (gridView && gridView.style.display === "none") ? "table" : "grid";
+            var current = htmlEl.getAttribute("data-view") || "grid";
             var next = current === "grid" ? "table" : "grid";
             localStorage.setItem("kilo-view", next);
             applyView(next);

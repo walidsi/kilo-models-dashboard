@@ -290,6 +290,17 @@ main.container {
     gap: 1.5rem;
 }
 
+/* View switching is driven by the `data-view` attribute on <html>, which is
+   set inline in <head> before the page paints. This keeps the chosen view
+   from flashing back to the grid when a search or filter reloads the page. */
+html[data-view="table"] .models-grid {
+    display: none;
+}
+
+html:not([data-view="table"]) .models-table {
+    display: none;
+}
+
 /* Model Card */
 .model-card {
     background: var(--surface);

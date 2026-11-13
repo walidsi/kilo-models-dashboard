@@ -1,24 +1,27 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" data-view="grid">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Kilo Gateway Models{% endblock %}</title>
     <script>
-        // Set theme before the page renders to prevent a white flash on
-        // navigation (e.g. when filters reload the page).
+        // Set theme and view before the page renders to prevent a flash on
+        // navigation (e.g. when a search or filter reloads the page).
         (function () {
             try {
                 var saved = localStorage.getItem("kilo-theme");
                 var theme = saved || "dark";
                 document.documentElement.setAttribute("data-theme", theme);
+
+                var view = localStorage.getItem("kilo-view") || "grid";
+                document.documentElement.setAttribute("data-view", view);
             } catch (e) {
                 // localStorage may be unavailable; keep the default light theme.
             }
         })();
     </script>
-    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}?v=8">
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}?v=9">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -158,7 +161,7 @@
                 {% endfor %}
             </div>
 
-            <div class="models-table" id="models-table" style="display: none;">
+            <div class="models-table" id="models-table"></div>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -209,7 +212,7 @@
         {% endblock %}
     </div>
 
-    <script src="{% static 'dashboard/js/script.js' %}?v=3"></script>
+    <script src="{% static 'dashboard/js/script.js' %}?v=4"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

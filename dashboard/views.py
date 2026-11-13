@@ -1,12 +1,17 @@
 """Views for the dashboard app."""
 
 import json
+import logging
+import ssl
 import urllib.request
 import urllib.error
 
+import certifi
 from django.conf import settings
 from django.core.cache import cache
 from django.shortcuts import render
+
+logger = logging.getLogger(__name__)
 
 CACHE_KEY = "kilo_models_data"
 
@@ -24,11 +29,15 @@ def fetch_models_from_api():
 
     api_url = settings.KILO_GATEWAY_API_URL
     try:
+        # On Wasmer/WASIX there is no system CA bundle, so HTTPS certificate
+        # verification fails by default. Use certifi's bundled CA roots.
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
         req = urllib.request.Request(api_url, headers={"Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=15) as response:
+        with urllib.request.urlopen(req, timeout=15, context=ssl_context) as response:
             raw_text = response.read().decode("utf-8")
         data = json.loads(raw_text)
     except (urllib.error.URLError, urllib.error.HTTPError, OSError, json.JSONDecodeError):
+        logger.exception("Failed to fetch models from %s", api_url)
         return [], ""
 
     # Normalize the response into a list of model dicts

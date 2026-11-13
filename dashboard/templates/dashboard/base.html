@@ -1,0 +1,212 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Kilo Gateway Models{% endblock %}</title>
+    <script>
+        // Set theme before the page renders to prevent a white flash on
+        // navigation (e.g. when filters reload the page).
+        (function () {
+            try {
+                var saved = localStorage.getItem("kilo-theme");
+                var dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+                var theme = saved || (dark ? "dark" : "light");
+                document.documentElement.setAttribute("data-theme", theme);
+            } catch (e) {
+                // localStorage may be unavailable; keep the default light theme.
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard">
+        {% block header %}
+        <header class="header">
+            <div class="container header-content">
+                <div class="logo">
+                    <span class="logo-icon">K</span>
+                    <span class="logo-text">Kilo Gateway</span>
+                </div>
+                <div class="header-actions">
+                    <button type="button" class="btn btn-outline" id="theme-toggle" aria-label="Toggle dark mode">
+                        <span id="theme-icon">🌙</span>
+                    </button>
+                    <button type="button" class="btn btn-outline" id="view-toggle" aria-label="Toggle grid or table view" title="Toggle grid/table view">
+                        <span id="view-icon">☰</span>
+                    </button>
+                    <button type="button" class="btn btn-outline" id="copy-all-btn" onclick="copyAllJson(this)">
+                        <span>📋</span> Copy All
+                    </button>
+                </div>
+            </div>
+        </header>
+        {% endblock %}
+
+        {% block content %}
+        <main class="container">
+            <h1 class="page-title">Available Models</h1>
+
+            <form class="toolbar" method="get" action="" id="filter-form">
+                <div class="search-box">
+                    <label for="search" class="sr-only">Search models</label>
+                    <input
+                        type="text"
+                        id="search"
+                        name="search"
+                        placeholder="Search by model name..."
+                        value="{{ search_query }}"
+                        class="search-input"
+                    >
+                </div>
+
+                <div class="filters">
+                    <select id="provider" name="provider" class="filter-select">
+                        <option value="">All Providers</option>
+                        {% for provider in providers %}
+                        <option value="{{ provider }}" {% if provider == provider_filter %}selected{% endif %}>
+                            {{ provider }}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <select id="reasoning" name="reasoning" class="filter-select">
+                        <option value="">All Reasoning Options</option>
+                        {% for option in reasoning_options %}
+                        <option value="{{ option }}" {% if option == reasoning_filter %}selected{% endif %}>
+                            {{ option }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <span class="count-badge">
+                    {{ total_count }} model{{ total_count|pluralize }}
+                </span>
+            </form>
+
+            {% if models %}
+            <div class="models-grid" id="models-grid">
+                {% for model in models %}
+                <div class="model-card">
+                    {{ model.raw|json_script:model.id }}
+                    <div class="model-header">
+                        <div class="model-info">
+                            <h3 class="model-name">{{ model.name }}</h3>
+                            <div class="model-id-row">
+                                <span class="model-id">{{ model.id }}</span><button type="button" class="btn-copy-id" title="Copy ID" onclick="copyModelId(this)" aria-label="Copy model ID">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <button class="btn btn-copy" onclick="copyModelJson('{{ model.id|escapejs }}', this)" title="Copy model data">
+                            📋
+                        </button>
+                    </div>
+
+                    <div class="model-body">
+                        {% if model.description %}
+                        <p class="model-description">{{ model.description }}</p>
+                        {% endif %}
+
+                        <div class="model-details">
+                            <div class="detail-item">
+                                <span class="detail-label">ID</span>
+                                <span class="detail-value">{{ model.id }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Provider</span>
+                                <span class="detail-value">{{ model.provider|default:"-" }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Reasoning Options</span>
+                                <span class="detail-value">{{ model.reasoning_options|default:"-" }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Context Length</span>
+                                <span class="detail-value">{{ model.context_length|default:"-" }}</span>
+                            </div>
+                            {% if model.architecture %}
+                            <div class="detail-item">
+                                <span class="detail-label">Architecture</span>
+                                <span class="detail-value">{{ model.architecture }}</span>
+                            </div>
+                            {% endif %}
+                            <div class="detail-item">
+                                <span class="detail-label">Pricing</span>
+                                <span class="detail-value">{{ model.pricing|default:"-" }}</span>
+                            </div>
+                            {% if model.capabilities %}
+                            <div class="detail-item detail-capabilities">
+                                <span class="detail-label">Capabilities</span>
+                                <span class="detail-value">
+                                    {% for cap in model.capabilities %}
+                                    <span class="chip">{{ cap }}</span>
+                                    {% endfor %}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="models-table" id="models-table" style="display: none;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="name">Name</th>
+                            <th class="sortable" data-sort="id">ID</th>
+                            <th class="sortable" data-sort="provider">Provider</th>
+                            <th class="sortable" data-sort="context">Context Length</th>
+                            <th class="sortable" data-sort="pricing">Pricing</th>
+                            <th class="sortable" data-sort="reasoning">Reasoning</th>
+                            <th>Copy</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for model in models %}
+                        <tr>
+                            <td data-sort="name">{{ model.name }}</td>
+                            <td data-sort="id">
+                                <span class="td-id">{{ model.id }}</span><button type="button" class="btn-copy-id" title="Copy ID" onclick="copyModelId(this)" aria-label="Copy model ID">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
+                            </td>
+                            <td data-sort="provider">{{ model.provider|default:"-" }}</td>
+                            <td data-sort="context">{{ model.context_length|default:"-" }}</td>
+                            <td data-sort="pricing">{{ model.pricing|default:"-" }}</td>
+                            <td data-sort="reasoning">{{ model.reasoning_options|default:"-" }}</td>
+                            <td><button class="btn btn-copy" onclick="copyModelJson('{{ model.id|escapejs }}', this)" title="Copy model data">📋</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>No models found matching your criteria.</p>
+            </div>
+            {% endif %}
+        </main>
+        {% endblock %}
+
+        {{ raw_json|json_script:"raw-all" }}
+
+        {% block footer %}
+        <footer class="footer">
+            <div class="container">
+                <p>&copy; 2026 Kilo Gateway Dashboard</p>
+            </div>
+        </footer>
+        {% endblock %}
+    </div>
+
+    <script src="{% static 'dashboard/js/script.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

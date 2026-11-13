@@ -62,24 +62,52 @@ def fetch_models_from_api():
     return result
 
 
+# Token-priced fields mapped to human-friendly labels. The API returns
+# per-token prices; we display them per 1M tokens (the industry standard).
+PRICING_LABELS = [
+    ("prompt", "Input"),
+    ("completion", "Output"),
+    ("input_cache_read", "Cache read"),
+    ("input_cache_write", "Cache write"),
+]
+
+
+def _to_per_million(raw):
+    """Convert a per-token price to dollars per 1M tokens, or None."""
+    if raw is None or raw == "":
+        return None
+    try:
+        return float(raw) * 1_000_000
+    except (TypeError, ValueError):
+        return None
+
+
+def _fmt_usd(value):
+    """Format a dollar amount with sensible precision."""
+    if value >= 1:
+        return f"${value:,.2f}"
+    if value >= 0.01:
+        return f"${value:.2f}"
+    return f"${value:.4f}"
+
+
 def _format_pricing(pricing):
-    """Format a pricing object into a readable string."""
+    """Format a pricing object into a readable, per-1M-token string."""
     if not isinstance(pricing, dict) or not pricing:
         return ""
     parts = []
-    if pricing.get("prompt"):
-        parts.append(f"prompt: ${pricing['prompt']}")
-    if pricing.get("completion"):
-        parts.append(f"completion: ${pricing['completion']}")
-    if pricing.get("input_cache_read"):
-        parts.append(f"cache read: ${pricing['input_cache_read']}")
-    if pricing.get("input_cache_write"):
-        parts.append(f"cache write: ${pricing['input_cache_write']}")
-    if pricing.get("web_search"):
-        parts.append(f"web search: ${pricing['web_search']}")
-    if pricing.get("discount"):
-        parts.append(f"discount: {pricing['discount']}%")
-    return " | ".join(parts)
+    for key, label in PRICING_LABELS:
+        per_million = _to_per_million(pricing.get(key))
+        if per_million is not None:
+            parts.append(f"{label} {_fmt_usd(per_million)}/1M")
+    # web_search is a flat per-request price, not per-token.
+    web_search = pricing.get("web_search")
+    if web_search not in (None, ""):
+        try:
+            parts.append(f"Web search {_fmt_usd(float(web_search))}/req")
+        except (TypeError, ValueError):
+            pass
+    return " · ".join(parts)
 
 
 # Logical complexity order for reasoning effort values (none -> max)

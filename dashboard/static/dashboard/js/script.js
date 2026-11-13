@@ -7,8 +7,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Load saved theme or check system preference
     const savedTheme = localStorage.getItem("kilo-theme");
-    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const initialTheme = savedTheme || (systemPrefersDark ? "dark" : "light");
+    const initialTheme = savedTheme || "dark";
 
     htmlElement.setAttribute("data-theme", initialTheme);
     themeIcon.textContent = initialTheme === "dark" ? "☀️" : "🌙";

@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,8 +11,7 @@
         (function () {
             try {
                 var saved = localStorage.getItem("kilo-theme");
-                var dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-                var theme = saved || (dark ? "dark" : "light");
+                var theme = saved || "dark";
                 document.documentElement.setAttribute("data-theme", theme);
             } catch (e) {
                 // localStorage may be unavailable; keep the default light theme.

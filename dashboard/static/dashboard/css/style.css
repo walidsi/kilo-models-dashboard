@@ -337,23 +337,6 @@ main.container {
     color: #16a34a;
 }
 
-.btn-copy-id.copied::after {
-    content: "Copied!";
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-bottom: 0.25rem;
-    padding: 0.25rem 0.5rem;
-    background: var(--text-primary);
-    color: var(--surface);
-    font-size: 0.7rem;
-    border-radius: 6px;
-    white-space: nowrap;
-    pointer-events: none;
-    z-index: 10;
-}
-
 .model-actions {
     display: flex;
     gap: 0.5rem;

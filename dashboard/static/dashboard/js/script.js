@@ -171,8 +171,11 @@ function copyModelId(btn) {
     var text = idEl ? idEl.textContent.trim() : "";
     navigator.clipboard.writeText(text).then(
         function () {
+            var original = btn.innerHTML;
+            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
             btn.classList.add("copied");
             setTimeout(function () {
+                btn.innerHTML = original;
                 btn.classList.remove("copied");
             }, 1500);
         },

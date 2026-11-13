@@ -18,7 +18,7 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}?v=8">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -68,6 +68,15 @@
                         {% for provider in providers %}
                         <option value="{{ provider }}" {% if provider == provider_filter %}selected{% endif %}>
                             {{ provider }}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <select id="modality" name="modality" class="filter-select">
+                        <option value="">All Modalities</option>
+                        {% for modality in modalities %}
+                        <option value="{{ modality }}" {% if modality == modality_filter %}selected{% endif %}>
+                            {{ modality }}
                         </option>
                         {% endfor %}
                     </select>
@@ -200,7 +209,7 @@
         {% endblock %}
     </div>
 
-    <script src="{% static 'dashboard/js/script.js' %}?v=2"></script>
+    <script src="{% static 'dashboard/js/script.js' %}?v=3"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

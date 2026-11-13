@@ -266,6 +266,9 @@ def model_list(request):
         key=_reasoning_sort_key,
     )
 
+    # Collect distinct input modalities (architecture values) from ALL models
+    modalities = sorted({v for m in all_models for v in m["architecture_input"]})
+
     # Search filter (model name only)
     search_query = request.GET.get("search", "").strip()
     if search_query:
@@ -285,6 +288,14 @@ def model_list(request):
             if provider_filter.lower() in m["provider"].lower()
         ]
 
+    # Modality filter (match individual input modalities)
+    modality_filter = request.GET.get("modality", "").strip()
+    if modality_filter:
+        models = [
+            m for m in models
+            if modality_filter.lower() in [v.lower() for v in m["architecture_input"]]
+        ]
+
     # Reasoning options filter (match individual values)
     reasoning_filter = request.GET.get("reasoning", "").strip()
     if reasoning_filter:
@@ -297,8 +308,10 @@ def model_list(request):
         "models": models,
         "search_query": search_query,
         "provider_filter": provider_filter,
+        "modality_filter": modality_filter,
         "reasoning_filter": reasoning_filter,
         "providers": providers,
+        "modalities": modalities,
         "reasoning_options": reasoning_options,
         "total_count": len(models),
         "raw_json": raw_json,

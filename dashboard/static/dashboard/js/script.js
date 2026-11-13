@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const providerSelect = document.getElementById("provider");
+    const modalitySelect = document.getElementById("modality");
     const reasoningSelect = document.getElementById("reasoning");
     const searchInput = document.getElementById("search");
     const filterForm = document.getElementById("filter-form");
@@ -39,6 +40,11 @@ document.addEventListener("DOMContentLoaded", function () {
     // Apply provider filter on change
     if (providerSelect) {
         providerSelect.addEventListener("change", submitFilterForm);
+    }
+
+    // Apply modality filter on change
+    if (modalitySelect) {
+        modalitySelect.addEventListener("change", submitFilterForm);
     }
 
     // Apply reasoning filter on change

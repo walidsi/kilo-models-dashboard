@@ -311,6 +311,8 @@ html:not([data-view="table"]) .models-table {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 320px;
 }
 
 .model-card:hover {
@@ -497,6 +499,11 @@ html:not([data-view="table"]) .models-table {
     border-bottom: 1px solid var(--border);
     color: var(--text-primary);
     vertical-align: top;
+}
+
+.data-table tbody tr {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 3rem;
 }
 
 .data-table tbody tr:last-child td {

@@ -1,5 +1,22 @@
 // Kilo Gateway Dashboard JavaScript
 
+(function () {
+    // Sync the view query param / cookie with localStorage before the page
+    // renders, mirroring the server-side active_view logic.
+    try {
+        var params = new URLSearchParams(window.location.search);
+        var viewParam = params.get("view");
+        var view = viewParam || localStorage.getItem("kilo-view") || "grid";
+        if (view !== "grid" && view !== "table") view = "grid";
+        document.documentElement.setAttribute("data-view", view);
+        if (!viewParam) {
+            try {
+                localStorage.setItem("kilo-view", view);
+            } catch (e) {}
+        }
+    } catch (e) {}
+})();
+
 document.addEventListener("DOMContentLoaded", function () {
     const themeToggle = document.getElementById("theme-toggle");
     const themeIcon = document.getElementById("theme-icon");
@@ -33,6 +50,16 @@ document.addEventListener("DOMContentLoaded", function () {
     // inputs (search, provider, reasoning), discarding any stray params.
     function submitFilterForm() {
         if (filterForm) {
+            // Preserve the current view across filter submissions.
+            var view = document.documentElement.getAttribute("data-view") || "grid";
+            var viewInput = filterForm.querySelector('input[name="view"]');
+            if (!viewInput) {
+                viewInput = document.createElement("input");
+                viewInput.type = "hidden";
+                viewInput.name = "view";
+                filterForm.appendChild(viewInput);
+            }
+            viewInput.value = view;
             filterForm.submit();
         }
     }
@@ -83,7 +110,11 @@ document.addEventListener("DOMContentLoaded", function () {
             var current = htmlEl.getAttribute("data-view") || "grid";
             var next = current === "grid" ? "table" : "grid";
             localStorage.setItem("kilo-view", next);
-            applyView(next);
+            // Reload so the server can render only the requested view. This
+            // avoids keeping both heavy subtrees in the DOM.
+            var url = new URL(window.location.href);
+            url.searchParams.set("view", next);
+            window.location.href = url.toString();
         });
     }
 
@@ -91,39 +122,48 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 /**
- * Copy the full JSON for a model to the clipboard.
- * @param {string} modelId - The model ID (used as the json_script element id)
+ * Fetch JSON lazily from a URL, pretty-print it, and copy to the clipboard.
+ * @param {string} url - The endpoint to fetch
  * @param {HTMLElement} btn - The button that was clicked
+ * @param {string} successLabel - Temporary label to show on success
  */
-function copyModelJson(modelId, btn) {
-    var el = document.getElementById(modelId);
-    if (!el) {
-        console.error("Raw JSON not found for model: " + modelId);
-        return;
-    }
+function fetchAndCopyJson(url, btn, successLabel) {
+    var original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = "⏳";
 
-    var text = el.textContent;
-    try {
-        var obj = JSON.parse(text);
-        text = JSON.stringify(obj, null, 2);
-    } catch (e) {
-        // Fall back to the raw text if it isn't valid JSON.
-    }
-
-    navigator.clipboard.writeText(text).then(
-        function () {
-            const original = btn.innerHTML;
-            btn.innerHTML = "✅";
+    fetch(url)
+        .then(function (response) {
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            return response.json();
+        })
+        .then(function (data) {
+            var text = JSON.stringify(data, null, 2);
+            return navigator.clipboard.writeText(text);
+        })
+        .then(function () {
+            btn.innerHTML = successLabel;
             btn.classList.add("copied");
             setTimeout(function () {
                 btn.innerHTML = original;
                 btn.classList.remove("copied");
+                btn.disabled = false;
             }, 1500);
-        },
-        function (err) {
+        })
+        .catch(function (err) {
             console.error("Copy failed: ", err);
-        }
-    );
+            btn.innerHTML = original;
+            btn.disabled = false;
+        });
+}
+
+/**
+ * Copy the full JSON for a model to the clipboard.
+ * @param {string} modelId - The model ID
+ * @param {HTMLElement} btn - The button that was clicked
+ */
+function copyModelJson(modelId, btn) {
+    fetchAndCopyJson("/api/models/" + encodeURIComponent(modelId) + "/", btn, "✅");
 }
 
 /**
@@ -131,34 +171,7 @@ function copyModelJson(modelId, btn) {
  * @param {HTMLElement} btn - The button that was clicked
  */
 function copyAllJson(btn) {
-    var el = document.getElementById("raw-all");
-    if (!el) {
-        console.error("Raw API JSON not found");
-        return;
-    }
-
-    var text = el.textContent;
-    try {
-        // json_script embeds the raw text as a JSON string; unescape it.
-        text = JSON.parse(text);
-    } catch (e) {
-        // Fall back to the raw text if it isn't valid JSON.
-    }
-
-    navigator.clipboard.writeText(text).then(
-        function () {
-            const original = btn.innerHTML;
-            btn.innerHTML = "✅ Copied";
-            btn.classList.add("copied");
-            setTimeout(function () {
-                btn.innerHTML = original;
-                btn.classList.remove("copied");
-            }, 1500);
-        },
-        function (err) {
-            console.error("Copy failed: ", err);
-        }
-    );
+    fetchAndCopyJson("/api/models/", btn, "✅ Copied");
 }
 
 /**

@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" data-theme="dark" data-view="grid">
+<html lang="en" data-theme="dark" data-view="{{ active_view }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,10 +14,15 @@
                 var theme = saved || "dark";
                 document.documentElement.setAttribute("data-theme", theme);
 
-                var view = localStorage.getItem("kilo-view") || "grid";
+                // Respect the explicit ?view= query param first; otherwise use
+                // localStorage so the chosen view persists across navigations.
+                var params = new URLSearchParams(window.location.search);
+                var viewParam = params.get("view");
+                var view = viewParam || localStorage.getItem("kilo-view") || "grid";
+                if (view !== "grid" && view !== "table") view = "grid";
                 document.documentElement.setAttribute("data-view", view);
             } catch (e) {
-                // localStorage may be unavailable; keep the default light theme.
+                // localStorage may be unavailable; keep the default dark theme/grid view.
             }
         })();
     </script>
@@ -37,7 +42,7 @@
                     <button type="button" class="btn btn-outline" id="theme-toggle" aria-label="Toggle dark mode">
                         <span id="theme-icon">🌙</span>
                     </button>
-                    <button type="button" class="btn btn-outline" id="view-toggle" aria-label="Toggle grid or table view" title="Toggle grid/table view">
+                    <button type="button" class="btn btn-outline" id="view-toggle" aria-label="Toggle grid or table view" title="Toggle grid/table view" data-view="{{ active_view }}">
                         <span id="view-icon">☰</span>
                     </button>
                     <button type="button" class="btn btn-outline" id="copy-all-btn" onclick="copyAllJson(this)">
@@ -100,10 +105,10 @@
             </form>
 
             {% if models %}
+            {% if active_view == "grid" %}
             <div class="models-grid" id="models-grid">
                 {% for model in models %}
                 <div class="model-card">
-                    {{ model.raw|json_script:model.id }}
                     <div class="model-header">
                         <div class="model-info">
                             <h3 class="model-name">{{ model.name }}</h3>
@@ -160,7 +165,7 @@
                 </div>
                 {% endfor %}
             </div>
-
+            {% else %}
             <div class="models-table" id="models-table">
                 <table class="data-table">
                     <thead>
@@ -193,6 +198,7 @@
                     </tbody>
                 </table>
             </div>
+            {% endif %}
             {% else %}
             <div class="empty-state">
                 <p>No models found matching your criteria.</p>
@@ -200,8 +206,6 @@
             {% endif %}
         </main>
         {% endblock %}
-
-        {{ raw_json|json_script:"raw-all" }}
 
         {% block footer %}
         <footer class="footer">

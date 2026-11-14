@@ -3,13 +3,15 @@
 import json
 import logging
 import ssl
-import urllib.request
 import urllib.error
+import urllib.request
 
 import certifi
 from django.conf import settings
 from django.core.cache import cache
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
+from django.views.decorators.http import require_GET
 
 logger = logging.getLogger(__name__)
 
@@ -244,9 +246,35 @@ def normalize_model(item):
     }
 
 
+def _raw_model_by_id(models, model_id):
+    """Return the raw upstream dict for a given model ID."""
+    for m in models:
+        if m["id"] == model_id:
+            return m["raw"]
+    return None
+
+
+@require_GET
+def api_models(request):
+    """Return the raw upstream API response verbatim."""
+    _models, raw_json = fetch_models_from_api()
+    payload = raw_json if raw_json else "[]"
+    return HttpResponse(payload.encode("utf-8"), content_type="application/json")
+
+
+@require_GET
+def api_model_detail(request, model_id):
+    """Return the raw upstream dict for a single model as JSON."""
+    all_models, _raw_json = fetch_models_from_api()
+    raw = _raw_model_by_id(all_models, model_id)
+    if raw is None:
+        return JsonResponse({"error": "Model not found"}, status=404)
+    return JsonResponse(raw)
+
+
 def model_list(request):
     """Display the list of models with search and filtering."""
-    all_models, raw_json = fetch_models_from_api()
+    all_models, _raw_json = fetch_models_from_api()
 
     # Collect distinct providers for the filter dropdown from ALL models
     # (union of values, independent of current filters)
@@ -304,6 +332,15 @@ def model_list(request):
             if reasoning_filter.lower() in [v.lower() for v in m["reasoning_values"]]
         ]
 
+    # Determine which view to render server-side. The client can request a
+    # specific view via query param; otherwise fall back to a cookie so the
+    # last chosen view persists across navigations.
+    active_view = request.GET.get("view", "").strip()
+    if active_view not in ("grid", "table"):
+        active_view = request.COOKIES.get("kilo_view", "grid")
+    if active_view not in ("grid", "table"):
+        active_view = "grid"
+
     context = {
         "models": models,
         "search_query": search_query,
@@ -314,6 +351,8 @@ def model_list(request):
         "modalities": modalities,
         "reasoning_options": reasoning_options,
         "total_count": len(models),
-        "raw_json": raw_json,
+        "active_view": active_view,
     }
-    return render(request, "dashboard/index.html", context)
+    response = render(request, "dashboard/index.html", context)
+    response.set_cookie("kilo_view", active_view, max_age=60 * 60 * 24 * 365)
+    return response

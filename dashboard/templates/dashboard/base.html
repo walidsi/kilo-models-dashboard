@@ -30,9 +30,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="icon" type="image/svg+xml" href="{% static 'dashboard/images/favicon.svg' %}">
     <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}?v=9">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"></noscript>
 </head>
 <body>
+    <!-- Shared SVG icons referenced via <use> to avoid repeating inline markup
+         for every model card / row. -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+        <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </symbol>
+    </svg>
     <div class="dashboard">
         {% block header %}
         <header class="header">
@@ -117,7 +126,7 @@
                             <h3 class="model-name">{{ model.name }}</h3>
                             <div class="model-id-row">
                                 <span class="model-id">{{ model.id }}</span><button type="button" class="btn-copy-id" title="Copy ID" onclick="copyModelId(this)" aria-label="Copy model ID">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    <svg width="14" height="14" aria-hidden="true"><use href="#icon-copy"></use></svg>
                                 </button>
                             </div>
                             {% if model.architecture_input %}
@@ -188,7 +197,7 @@
                             <td data-sort="name">{{ model.name }}</td>
                             <td data-sort="id">
                                 <span class="td-id">{{ model.id }}</span><button type="button" class="btn-copy-id" title="Copy ID" onclick="copyModelId(this)" aria-label="Copy model ID">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    <svg width="14" height="14" aria-hidden="true"><use href="#icon-copy"></use></svg>
                                 </button>
                             </td>
                             <td data-sort="provider">{{ model.provider|default:"-" }}</td>
@@ -213,7 +222,7 @@
         {% block footer %}
         <footer class="footer">
             <div class="container">
-                <p>&copy; 2026 Kilo Gateway Dashboard · v0.2</p>
+                <p>&copy; 2026 Kilo Gateway Dashboard · v0.3</p>
             </div>
         </footer>
         {% endblock %}

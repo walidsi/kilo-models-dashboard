@@ -19,11 +19,16 @@ CACHE_KEY = "kilo_models_data"
 
 
 def fetch_models_from_api():
-    """Fetch model list from the Kilo Gateway API.
+    """Fetch and normalize the model list from the Kilo Gateway API.
 
-    Returns a tuple of (normalized_models, raw_json_text). The raw JSON is
-    the exact response body so it can be copied verbatim. Results are cached
-    for a short TTL to avoid hammering the upstream API.
+    Returns a dict with:
+      - "models": normalized model dicts (no raw payload embedded)
+      - "raw_text": the exact upstream response body, for verbatim copying
+      - "raw_by_id": {model_id: raw upstream dict} for O(1) detail lookups
+      - "providers", "reasoning_options", "modalities": precomputed filter options
+
+    The whole normalized result is cached for a short TTL so the per-request
+    work is reduced to filtering + rendering rather than re-parsing.
     """
     cached = cache.get(CACHE_KEY)
     if cached is not None:
@@ -40,10 +45,16 @@ def fetch_models_from_api():
         data = json.loads(raw_text)
     except (urllib.error.URLError, urllib.error.HTTPError, OSError, json.JSONDecodeError):
         logger.exception("Failed to fetch models from %s", api_url)
-        return [], ""
+        return {
+            "models": [],
+            "raw_text": "",
+            "raw_by_id": {},
+            "providers": [],
+            "reasoning_options": [],
+            "modalities": [],
+        }
 
     # Normalize the response into a list of model dicts
-    models = []
     if isinstance(data, dict):
         # API might wrap results in a key like "models", "data", "results"
         for key in ("models", "data", "results", "items"):
@@ -54,12 +65,41 @@ def fetch_models_from_api():
             # If no list found, wrap the single dict
             data = [data] if data else []
 
+    models = []
+    raw_by_id = {}
+    all_providers = set()
+    reasoning_values_set = set()
+    modalities_set = set()
+
     if isinstance(data, list):
         for item in data:
-            if isinstance(item, dict):
-                models.append(normalize_model(item))
+            if not isinstance(item, dict):
+                continue
+            model = normalize_model(item)
+            models.append(model)
 
-    result = (models, raw_text)
+            # Index raw payloads once for O(1) detail lookups instead of
+            # scanning the model list per request.
+            model_id = model["id"]
+            if model_id and model_id not in raw_by_id:
+                raw_by_id[model_id] = item
+
+            # Precompute filter options while we already have each model at hand.
+            for provider in model["provider"].split(","):
+                provider = provider.strip()
+                if provider:
+                    all_providers.add(provider)
+            reasoning_values_set.update(model["reasoning_values"])
+            modalities_set.update(model["architecture_input"])
+
+    result = {
+        "models": models,
+        "raw_text": raw_text,
+        "raw_by_id": raw_by_id,
+        "providers": sorted(all_providers),
+        "reasoning_options": sorted(reasoning_values_set, key=_reasoning_sort_key),
+        "modalities": sorted(modalities_set),
+    }
     cache.set(CACHE_KEY, result, timeout=settings.KILO_GATEWAY_CACHE_TIMEOUT)
     return result
 
@@ -179,9 +219,8 @@ def _extract_reasoning_values(val):
     return values
 
 
-def _format_reasoning_options(val):
-    """Format reasoning_options into a readable, complexity-sorted string."""
-    values = _extract_reasoning_values(val)
+def _format_reasoning_values(values):
+    """Format an extracted reasoning-values list into a readable, sorted string."""
     if not values:
         return ""
     unique = sorted(set(values), key=_reasoning_sort_key)
@@ -195,7 +234,7 @@ def normalize_model(item):
     # reasoning_options — nested under opencode.reasoning_options
     reasoning_opts = item.get("reasoning_options") or opencode.get("reasoning_options")
     reasoning_values = _extract_reasoning_values(reasoning_opts)
-    reasoning_str = _format_reasoning_options(reasoning_opts)
+    reasoning_str = _format_reasoning_values(reasoning_values)
 
     # pricing — format the object into a readable string
     pricing_raw = item.get("pricing") or {}
@@ -223,50 +262,50 @@ def normalize_model(item):
     arch_modality = arch.get("modality") if isinstance(arch, dict) else ""
     arch_input = arch.get("input_modalities") if isinstance(arch, dict) else []
     arch_output = arch.get("output_modalities") if isinstance(arch, dict) else []
+    arch_input = arch_input if isinstance(arch_input, list) else []
 
     # supported parameters / capabilities
     supported_params = item.get("supported_parameters") or []
 
+    name = item.get("name") or item.get("display_name") or item.get("id", "")
+
     return {
-        "id": item.get("id") or item.get("model_id") or item.get("name", ""),
-        "name": item.get("name") or item.get("display_name") or item.get("id", ""),
+        "id": item.get("id") or item.get("model_id") or name,
+        "name": name,
+        # Lowercased copies precomputed once so per-request filtering does not
+        # re-run .lower() (or build new lists) for every model on every request.
+        "name_lower": name.lower(),
         "provider": provider_str,
+        "provider_lower": provider_str.lower(),
         "pricing": pricing_str,
         "reasoning_options": reasoning_str,
         "reasoning_values": reasoning_values,
+        "reasoning_values_lower": tuple(v.lower() for v in reasoning_values),
         "context_length": context_len if context_len is not None else "",
         "context_length_display": _format_number(context_len),
         "capabilities": supported_params,
         "description": item.get("description") or "",
         "architecture": arch_modality,
-        "architecture_input": arch_input if isinstance(arch_input, list) else [],
+        "architecture_input": arch_input,
+        "architecture_input_lower": tuple(v.lower() for v in arch_input),
         "architecture_output": arch_output if isinstance(arch_output, list) else [],
         "created": item.get("created"),
-        "raw": item,
     }
-
-
-def _raw_model_by_id(models, model_id):
-    """Return the raw upstream dict for a given model ID."""
-    for m in models:
-        if m["id"] == model_id:
-            return m["raw"]
-    return None
 
 
 @require_GET
 def api_models(request):
     """Return the raw upstream API response verbatim."""
-    _models, raw_json = fetch_models_from_api()
-    payload = raw_json if raw_json else "[]"
+    data = fetch_models_from_api()
+    payload = data["raw_text"] if data["raw_text"] else "[]"
     return HttpResponse(payload.encode("utf-8"), content_type="application/json")
 
 
 @require_GET
 def api_model_detail(request, model_id):
     """Return the raw upstream dict for a single model as JSON."""
-    all_models, _raw_json = fetch_models_from_api()
-    raw = _raw_model_by_id(all_models, model_id)
+    data = fetch_models_from_api()
+    raw = data["raw_by_id"].get(model_id)
     if raw is None:
         return JsonResponse({"error": "Model not found"}, status=404)
     return JsonResponse(raw)
@@ -274,28 +313,8 @@ def api_model_detail(request, model_id):
 
 def model_list(request):
     """Display the list of models with search and filtering."""
-    all_models, _raw_json = fetch_models_from_api()
-
-    # Collect distinct providers for the filter dropdown from ALL models
-    # (union of values, independent of current filters)
-    all_providers = set()
-    for m in all_models:
-        if m["provider"]:
-            for p in m["provider"].split(","):
-                p = p.strip()
-                if p:
-                    all_providers.add(p)
-    providers = sorted(all_providers)
-
-    # Collect distinct individual reasoning options from ALL models
-    # (sorted by logical complexity: none -> max)
-    reasoning_options = sorted(
-        {v for m in all_models for v in m["reasoning_values"]},
-        key=_reasoning_sort_key,
-    )
-
-    # Collect distinct input modalities (architecture values) from ALL models
-    modalities = sorted({v for m in all_models for v in m["architecture_input"]})
+    data = fetch_models_from_api()
+    all_models = data["models"]
 
     # Search filter (model name only)
     search_query = request.GET.get("search", "").strip()
@@ -303,7 +322,7 @@ def model_list(request):
         tokens = [t.lower() for t in search_query.split()]
         models = [
             m for m in all_models
-            if all(t in m["name"].lower() for t in tokens)
+            if all(t in m["name_lower"] for t in tokens)
         ]
     else:
         models = all_models
@@ -311,25 +330,28 @@ def model_list(request):
     # Provider filter (substring match since provider is comma-joined)
     provider_filter = request.GET.get("provider", "").strip()
     if provider_filter:
+        provider_lower = provider_filter.lower()
         models = [
             m for m in models
-            if provider_filter.lower() in m["provider"].lower()
+            if provider_lower in m["provider_lower"]
         ]
 
     # Modality filter (match individual input modalities)
     modality_filter = request.GET.get("modality", "").strip()
     if modality_filter:
+        modality_lower = modality_filter.lower()
         models = [
             m for m in models
-            if modality_filter.lower() in [v.lower() for v in m["architecture_input"]]
+            if modality_lower in m["architecture_input_lower"]
         ]
 
     # Reasoning options filter (match individual values)
     reasoning_filter = request.GET.get("reasoning", "").strip()
     if reasoning_filter:
+        reasoning_lower = reasoning_filter.lower()
         models = [
             m for m in models
-            if reasoning_filter.lower() in [v.lower() for v in m["reasoning_values"]]
+            if reasoning_lower in m["reasoning_values_lower"]
         ]
 
     # Determine which view to render server-side. The client can request a
@@ -347,9 +369,9 @@ def model_list(request):
         "provider_filter": provider_filter,
         "modality_filter": modality_filter,
         "reasoning_filter": reasoning_filter,
-        "providers": providers,
-        "modalities": modalities,
-        "reasoning_options": reasoning_options,
+        "providers": data["providers"],
+        "modalities": data["modalities"],
+        "reasoning_options": data["reasoning_options"],
         "total_count": len(models),
         "active_view": active_view,
     }

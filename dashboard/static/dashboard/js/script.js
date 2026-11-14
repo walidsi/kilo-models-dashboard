@@ -91,6 +91,50 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // Search button handler
+    const searchBtn = document.getElementById("search-btn");
+    if (searchBtn && searchInput) {
+        searchBtn.addEventListener("click", function () {
+            searchInput.value = searchInput.value.trim();
+            submitFilterForm();
+        });
+    }
+
+    // Clear all filters button
+    const clearFiltersBtn = document.getElementById("clear-filters-btn");
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener("click", function () {
+            // Reset all filter values
+            if (searchInput) searchInput.value = "";
+            if (providerSelect) providerSelect.value = "";
+            if (modalitySelect) modalitySelect.value = "";
+            if (reasoningSelect) reasoningSelect.value = "";
+            submitFilterForm();
+        });
+    }
+
+    // Individual filter chip removal
+    const filterChips = document.querySelectorAll(".filter-chip");
+    filterChips.forEach(function (chip) {
+        const removeBtn = chip.querySelector(".chip-remove");
+        if (removeBtn) {
+            removeBtn.addEventListener("click", function () {
+                const filterType = chip.getAttribute("data-filter");
+                // Reset the corresponding filter control
+                if (filterType === "search" && searchInput) {
+                    searchInput.value = "";
+                } else if (filterType === "provider" && providerSelect) {
+                    providerSelect.value = "";
+                } else if (filterType === "modality" && modalitySelect) {
+                    modalitySelect.value = "";
+                } else if (filterType === "reasoning" && reasoningSelect) {
+                    reasoningSelect.value = "";
+                }
+                submitFilterForm();
+            });
+        }
+    });
+
     // View toggle (grid vs table)
     const viewToggle = document.getElementById("view-toggle");
     const viewIcon = document.getElementById("view-icon");

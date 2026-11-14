@@ -1,6 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en" data-theme="dark" data-view="{{ active_view }}">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -29,11 +30,13 @@
     <link rel="icon" type="image/svg+xml" href="{% static 'dashboard/images/favicon.svg' %}">
     <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}?v=9">
 </head>
+
 <body>
     <!-- Shared SVG icons referenced via <use> to avoid repeating inline markup
          for every model card / row. -->
     <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
-        <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
         </symbol>
@@ -50,7 +53,9 @@
                     <button type="button" class="btn btn-outline" id="theme-toggle" aria-label="Toggle dark mode">
                         <span id="theme-icon">🌙</span>
                     </button>
-                    <button type="button" class="btn btn-outline" id="view-toggle" aria-label="Toggle grid or table view" title="Toggle grid/table view" data-view="{{ active_view }}">
+                    <button type="button" class="btn btn-outline" id="view-toggle"
+                        aria-label="Toggle grid or table view" title="Toggle grid/table view"
+                        data-view="{{ active_view }}">
                         <span id="view-icon">☰</span>
                     </button>
                     <button type="button" class="btn btn-outline" id="copy-all-btn" onclick="copyAllJson(this)">
@@ -68,14 +73,11 @@
             <form class="toolbar" method="get" action="" id="filter-form">
                 <div class="search-box">
                     <label for="search" class="sr-only">Search models</label>
-                    <input
-                        type="text"
-                        id="search"
-                        name="search"
-                        placeholder="Search by model name..."
-                        value="{{ search_query }}"
-                        class="search-input"
-                    >
+                    <input type="text" id="search" name="search" placeholder="Search by model name..."
+                        value="{{ search_query }}" class="search-input">
+                    <button type="button" class="btn btn-search" id="search-btn" aria-label="Search">
+                        🔍
+                    </button>
                 </div>
 
                 <div class="filters">
@@ -110,7 +112,43 @@
                 <span class="count-badge">
                     {{ total_count }} model{{ total_count|pluralize }}
                 </span>
+
+                {% if search_query or provider_filter or modality_filter or reasoning_filter %}
+                <button type="button" class="btn btn-clear-filters" id="clear-filters-btn">
+                    ✕ Clear filters
+                </button>
+                {% endif %}
             </form>
+
+            {% if search_query or provider_filter or modality_filter or reasoning_filter %}
+            <div class="active-filters" id="active-filters">
+                <span class="active-filters-label">Active filters:</span>
+                {% if search_query %}
+                <span class="filter-chip" data-filter="search">
+                    Search: "{{ search_query }}"
+                    <button type="button" class="chip-remove" aria-label="Remove search filter">&times;</button>
+                </span>
+                {% endif %}
+                {% if provider_filter %}
+                <span class="filter-chip" data-filter="provider">
+                    Provider: {{ provider_filter }}
+                    <button type="button" class="chip-remove" aria-label="Remove provider filter">&times;</button>
+                </span>
+                {% endif %}
+                {% if modality_filter %}
+                <span class="filter-chip" data-filter="modality">
+                    Modality: {{ modality_filter }}
+                    <button type="button" class="chip-remove" aria-label="Remove modality filter">&times;</button>
+                </span>
+                {% endif %}
+                {% if reasoning_filter %}
+                <span class="filter-chip" data-filter="reasoning">
+                    Reasoning: {{ reasoning_filter }}
+                    <button type="button" class="chip-remove" aria-label="Remove reasoning filter">&times;</button>
+                </span>
+                {% endif %}
+            </div>
+            {% endif %}
 
             {% if models %}
             {% if active_view == "grid" %}
@@ -121,8 +159,11 @@
                         <div class="model-info">
                             <h3 class="model-name">{{ model.name }}</h3>
                             <div class="model-id-row">
-                                <span class="model-id">{{ model.id }}</span><button type="button" class="btn-copy-id" title="Copy ID" onclick="copyModelId(this)" aria-label="Copy model ID">
-                                    <svg width="14" height="14" aria-hidden="true"><use href="#icon-copy"></use></svg>
+                                <span class="model-id">{{ model.id }}</span><button type="button" class="btn-copy-id"
+                                    title="Copy ID" onclick="copyModelId(this)" aria-label="Copy model ID">
+                                    <svg width="14" height="14" aria-hidden="true">
+                                        <use href="#icon-copy"></use>
+                                    </svg>
                                 </button>
                             </div>
                             {% if model.architecture_input %}
@@ -131,7 +172,8 @@
                             </div>
                             {% endif %}
                         </div>
-                        <button class="btn btn-copy" onclick="copyModelJson('{{ model.id|escapejs }}', this)" title="Copy model data">
+                        <button class="btn btn-copy" onclick="copyModelJson('{{ model.id|escapejs }}', this)"
+                            title="Copy model data">
                             📋
                         </button>
                     </div>
@@ -192,15 +234,19 @@
                         <tr>
                             <td data-sort="name">{{ model.name }}</td>
                             <td data-sort="id">
-                                <span class="td-id">{{ model.id }}</span><button type="button" class="btn-copy-id" title="Copy ID" onclick="copyModelId(this)" aria-label="Copy model ID">
-                                    <svg width="14" height="14" aria-hidden="true"><use href="#icon-copy"></use></svg>
+                                <span class="td-id">{{ model.id }}</span><button type="button" class="btn-copy-id"
+                                    title="Copy ID" onclick="copyModelId(this)" aria-label="Copy model ID">
+                                    <svg width="14" height="14" aria-hidden="true">
+                                        <use href="#icon-copy"></use>
+                                    </svg>
                                 </button>
                             </td>
                             <td data-sort="provider">{{ model.provider|default:"-" }}</td>
                             <td data-sort="context" data-sort-value="{{ model.context_length|default:'' }}"{% if model.context_length %} title="{{ model.context_length }}"{% endif %}>{{ model.context_length_display|default:"-" }}</td>
                             <td data-sort="pricing" class="pricing-value">{{ model.pricing|default:"-" }}</td>
                             <td data-sort="reasoning">{{ model.reasoning_options|default:"-" }}</td>
-                            <td><button class="btn btn-copy" onclick="copyModelJson('{{ model.id|escapejs }}', this)" title="Copy model data">📋</button></td>
+                            <td><button class="btn btn-copy" onclick="copyModelJson('{{ model.id|escapejs }}', this)"
+                                    title="Copy model data">📋</button></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -227,4 +273,5 @@
     <script src="{% static 'dashboard/js/script.js' %}?v=4"></script>
     {% block extra_js %}{% endblock %}
 </body>
+
 </html>

@@ -99,8 +99,9 @@ CACHES = {
     }
 }
 
-# Short TTL cache (seconds) for the upstream models payload.
-KILO_GATEWAY_CACHE_TIMEOUT = int(os.environ.get("KILO_GATEWAY_CACHE_TIMEOUT", "300"))
+# Cache TTL (seconds) for the upstream models payload. Defaults to 24 hours;
+# the cache is also pre-warmed at startup so the first request is already warm.
+KILO_GATEWAY_CACHE_TIMEOUT = int(os.environ.get("KILO_GATEWAY_CACHE_TIMEOUT", "86400"))
 
 KILO_GATEWAY_API_URL = os.environ.get(
     "KILO_GATEWAY_API_URL",

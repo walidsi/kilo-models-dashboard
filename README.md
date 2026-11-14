@@ -12,7 +12,7 @@ A Django dashboard that lists the models available from the [Kilo Gateway API](h
   - Per-model copy button copies that model's full JSON (pretty-printed).
   - Per-ID copy button copies the model ID.
   - **Copy All** copies the raw API response exactly as returned.
-- **Short TTL cache** (default 300s) to avoid hammering the upstream API on every request.
+- **24-hour cache** (default 86400s), pre-warmed at startup to avoid hitting the upstream API on every request.
 
 ## Requirements
 
@@ -35,7 +35,7 @@ Configuration is read from environment variables (all optional):
 | Variable | Default | Description |
 | --- | --- | --- |
 | `KILO_GATEWAY_API_URL` | `https://ai-gateway.kilo.ai/api/v1/models` | Upstream models endpoint |
-| `KILO_GATEWAY_CACHE_TIMEOUT` | `300` | Cache TTL in seconds |
+| `KILO_GATEWAY_CACHE_TIMEOUT` | `86400` | Cache TTL in seconds (default 24h) |
 | `DJANGO_SECRET_KEY` | dev key | Django secret key (set in production) |
 | `DJANGO_DEBUG` | `1` | Set `0` in production |
 | `DJANGO_ALLOWED_HOSTS` | `*` | Comma-separated allowed hosts |
